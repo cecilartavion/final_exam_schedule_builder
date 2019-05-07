@@ -4,8 +4,9 @@ from Class import Class
 from ClassList import ClassList
 from Session import Session
 from EquivalenceClassList import EquivalenceClassList
+import csv
 
-pattern1_str = "(?P<crn>\d{5})\s+(?P<dept>[A-Z]{4})\s+(?P<course_number>\d{4}[A-Z]*)\s+(?P<section>\d+[A-Z]*)"
+pattern1_str = "\s*(?P<crn>\d{5})\s+(?P<dept>[A-Z]{4})\s+(?P<course_number>\d{4}[A-Z]*)\s+(?P<section>\d+[A-Z]*)"
 pattern1 = re.compile(pattern1_str)
 
 pattern2_str = "\s+(?P<start_date>\d{2}\-[A-Z]{3})-\d{4}\s+(?P<end_date>\d{2}-[A-Z]{3}-\d{4})\s+(?P<days>[MTWRF]+)\s+(?P<start_time>\d{2}:\d{2}[ap]m)-(?P<end_time>\d{2}:\d{2}[ap]m)\D+\d{4}[A-z]*"
@@ -15,8 +16,9 @@ class_list = ClassList()
 
 current_class = None
 
-with open('banner_course_schedule.py') as f:
-
+#with open('banner_course_schedule.py') as f:
+with open('html_classes_content2.txt') as f:
+    
     for line in f:
 
         results1 = pattern1.match(line)
@@ -68,7 +70,19 @@ print(class_list.session_dict)
 #    if cl.split()[0]=='M':
 #        x+=1 
 #x
-cl_str_list
+#cl_str_list
+
+#Read in the dictionary that represents the key (CRN) and the value (student ID)
+#The purpose is to see students are taking two classes at the same exam time.
+#Or we could build the exam schedule with this. 
+reader = csv.reader(open('students_to_classes.csv', 'r'))
+di = {}
+for row in reader:
+    print(row)
+    if row!=[]:
+        k, v = row
+        di[k] = v
+
 
 import networkx as nx
 
@@ -93,13 +107,13 @@ print(len(my_graph.edges))
 
 while len(my_graph.nodes) > 0:
     print('\nClique ' + str(i))
-    #max_num_sections = 0
-    #max_node = None
+    max_num_sections = 0
+    max_node = None
     
-    #for node in my_graph.nodes:
-    #    if class_list.session_dict[str(node)] > max_num_sections:
-    #        max_num_sections = class_list.session_dict[str(node)]
-    #        max_node = node
+#    for node in my_graph.nodes:
+#        if class_list.session_dict[str(node)] > max_num_sections:
+#            max_num_sections = class_list.session_dict[str(node)]
+#            max_node = node
             
     #print('Max Node:  ' + str(max_node))        
     #print('Max_Num_Sections:  ' + str(max_num_sections))
@@ -107,33 +121,40 @@ while len(my_graph.nodes) > 0:
     cliques = nx.enumerate_all_cliques(my_graph)
     clique_number = nx.graph_clique_number(my_graph)
             
-    #cliques = nx.cliques_containing_node(my_graph, max_node)
-    #clique_number = nx.node_clique_number(my_graph, max_node)
-    #print('Clique Number:  ' + str(clique_number))
+#    cliques = nx.cliques_containing_node(my_graph, max_node)
+#    clique_number = nx.node_clique_number(my_graph, max_node)
+#    print('Clique Number:  ' + str(clique_number))
     
     #print(len(clique.nodes))
     #print(len(clique.nodes[0]))
     #print(len(clique.edges))
     
-    #for clique in cliques:
-    #    if len(clique) == clique_number:
-    #        num_sections = class_list.get_number_of_sections([str(x) for x in clique])
-    #        break
-    #my_graph.remove_nodes_from(clique)
-    #print(''.join([str(x)+' ' for x in clique]))
-    #print(len(my_graph.nodes))
-    #i = i + 1
-    
+#    for clique in cliques:
+#        if len(clique) == clique_number:
+#            num_sections = class_list.get_number_of_sections([str(x) for x in clique])
+#            break
+#    my_graph.remove_nodes_from(clique)
+#    print(''.join([str(x)+' ' for x in clique]))
+#    print('Number of Sections in Clique:  ' + str(class_list.get_number_of_sections([str(x) for x in clique])))  
+##    print(len(my_graph.nodes))
+#    i = i + 1
+
+#Maximize # of sections in schedule. 
+    max_num_sections = 0
     for clique in cliques:
-        if len(clique) == clique_number:
-            my_graph.remove_nodes_from(clique)
-            print(''.join([str(x)+' ' for x in clique]))    
-            break
-    print('Number of Sections in Clique:  ' + str(class_list.get_number_of_sections([str(x) for x in clique])))  
-    print('Clique Size:  ' + str(len(clique)))
+        section_num = 0 
+        for node in clique:
+            section_num += class_list.session_dict[str(node)]
+        if section_num > max_num_sections:
+            max_num_sections = section_num
+            max_clique = clique
+    my_graph.remove_nodes_from(max_clique)
+    print(''.join([str(x)+' ' for x in max_clique]))    
+    print('Number of Sections in Clique:  ' + str(max_num_sections))  
+    print('Clique Size:  ' + str(len(max_clique)))
     i = i + 1
 
-print(i)
+#print(i)
 
 '''
     max_clique = []
@@ -149,7 +170,7 @@ print(i)
     print('Max Sections:  ' + str(max_sections))
 '''
 
-#print(class_list.session_dict['T 03:45PM 04:35PM']) #get_number_of_sections(r"M 07:35PM 08:50PM"))
+#print(class_list.session_dict['TR 12:15PM 01:30PM']) #get_number_of_sections(r"M 07:35PM 08:50PM"))
 #print(class_list.session_dict['T 04:45PM 06:00PM']) #get_number_of_sections(r"M 07:35PM 08:50PM"))
 
 
@@ -173,3 +194,13 @@ print(len(tc_graph.nodes))
 print(nx.number_connected_components(tc_graph))
 print(len(tc_graph.edges))
 '''
+
+#code for checking individual classes.
+#print(class_list.session_dict['MW 09:00AM 10:15AM']) #get_number_of_sections(r"M 07:35PM 08:50PM"))
+'''
+Clique 2
+MW 09:25AM 10:40AM W 08:00AM 10:30AM W 09:25AM 10:40AM MW 08:00AM 09:50AM MW 09:00AM 10:15AM 
+Number of Sections in Clique:  54
+Clique Size:  5
+'''
+
